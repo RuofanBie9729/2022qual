@@ -334,35 +334,10 @@ table(predictY, test_set$risk)
 
 
 ##### data_resp
-#Data_resp <- na.omit(S2Data[, c(1:12, 15)])
-#Data_resp$body_region0 <- round(log(Data_resp$body_region0, 2))
-
 set.seed(1)
 test_id <- sample(dim(Data_resp)[1], 738)
 test_set <- Data_resp[test_id, ]
 train_set <- Data_resp[-test_id, ]
-
-full0 <- glm(resp_high ~ pain_intensity0 + sleep_disturb + global_mental + global_physical + age + bmi + 
-  body_region0 + gender + race + cci + medicaid + pain_detect, data=train_set, family="binomial")
-sub0 <- step(full0)
-
-full2 <- glm(resp_high ~ pain_detect + sleep_disturb + global_physical + bmi + medicaid + body_region0 + 
-pain_intensity0 + global_mental + I(pain_detect^2) + I(sleep_disturb) + I(global_physical^2) + I(bmi^2) + 
-I(body_region0^2) + I(pain_intensity0^2) + I(global_mental^2) + pain_detect:sleep_disturb + 
-pain_detect:global_physical + pain_detect:bmi + pain_detect:medicaid + pain_detect:body_region0 + 
-pain_detect:pain_intensity0 + pain_detect:global_mental + sleep_disturb:global_physical + 
-sleep_disturb:bmi + sleep_disturb:medicaid + sleep_disturb:body_region0 + sleep_disturb:pain_intensity0 + 
-sleep_disturb:global_mental + global_physical:bmi + global_physical:medicaid + global_physical:body_region0 + 
-global_physical:pain_intensity0 + global_physical:global_mental + bmi:medicaid + bmi:body_region0 + 
-bmi:pain_intensity0 + bmi:global_mental + medicaid:body_region0 + medicaid:pain_intensity0 + 
-medicaid:global_mental + body_region0:pain_intensity0 + body_region0:pain_intensity0 + 
-pain_intensity0:global_mental, data=train_set, family="binomial")
-sub2 <- step(full2)
-
-final <- glm(resp_high ~ pain_detect + sleep_disturb + global_physical + bmi + medicaid + body_region0 + 
-pain_intensity0 + global_mental + I(pain_intensity0^2) + sleep_disturb:global_physical + sleep_disturb:bmi, 
-data=train_set, family="binomial")
-
 
 ### two-stage stepwise
 full0 <- glm(resp_high ~ pain_intensity0 + sleep_disturb + global_mental + global_physical + age + bmi + 
@@ -432,3 +407,40 @@ roc.plot(test_set$resp_high, prob, xlab="False Positive Rate", ylab="True Positi
 predictY <- ifelse(prob>=0.5, 1, 0)
 table(predictY, test_set$resp_high)
 
+###### Data_resp, using log-transformed baseline body region  
+Data_resp <- na.omit(S2Data[, c(1:12, 15)])
+Data_resp$body_region0 <- round(log(Data_resp$body_region0, 2))
+
+set.seed(1)
+test_id <- sample(dim(Data_resp)[1], 738)
+test_set <- Data_resp[test_id, ]
+train_set <- Data_resp[-test_id, ]
+
+full0 <- glm(resp_high ~ pain_intensity0 + sleep_disturb + global_mental + global_physical + age + bmi + 
+  body_region0 + gender + race + cci + medicaid + pain_detect, data=train_set, family="binomial")
+sub0 <- step(full0)
+
+full2 <- glm(resp_high ~ pain_detect + sleep_disturb + global_physical + bmi + medicaid + body_region0 + 
+pain_intensity0 + global_mental + I(pain_detect^2) + I(sleep_disturb) + I(global_physical^2) + I(bmi^2) + 
+I(body_region0^2) + I(pain_intensity0^2) + I(global_mental^2) + pain_detect:sleep_disturb + 
+pain_detect:global_physical + pain_detect:bmi + pain_detect:medicaid + pain_detect:body_region0 + 
+pain_detect:pain_intensity0 + pain_detect:global_mental + sleep_disturb:global_physical + 
+sleep_disturb:bmi + sleep_disturb:medicaid + sleep_disturb:body_region0 + sleep_disturb:pain_intensity0 + 
+sleep_disturb:global_mental + global_physical:bmi + global_physical:medicaid + global_physical:body_region0 + 
+global_physical:pain_intensity0 + global_physical:global_mental + bmi:medicaid + bmi:body_region0 + 
+bmi:pain_intensity0 + bmi:global_mental + medicaid:body_region0 + medicaid:pain_intensity0 + 
+medicaid:global_mental + body_region0:pain_intensity0 + body_region0:pain_intensity0 + 
+pain_intensity0:global_mental, data=train_set, family="binomial")
+sub2 <- step(full2)
+
+final <- glm(resp_high ~ pain_detect + sleep_disturb + global_physical + bmi + medicaid + body_region0 + 
+pain_intensity0 + global_mental + I(pain_intensity0^2) + sleep_disturb:global_physical + sleep_disturb:bmi, 
+data=train_set, family="binomial")
+
+coef <- round(coefficients(final), 2)
+predictX <- model.matrix(final, data=test_set)
+prob <- expit(predictX %*% coef)
+library(verification)
+roc.plot(test_set$resp_high, prob, xlab="False Positive Rate", ylab="True Positive Rate")
+predictY <- ifelse(prob>=0.5, 1, 0)
+table(predictY, test_set$resp_high)
